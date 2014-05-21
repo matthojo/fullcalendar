@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset='utf-8' />
+<link href='../build/out/fullcalendar.css' rel='stylesheet' />
+<link href='../build/out/fullcalendar.print.css' rel='stylesheet' media='print' />
+<script src='../lib/moment/moment.js'></script>
+<script src='../lib/jquery/jquery.js'></script>
+<script src='../lib/jquery-ui/ui/jquery-ui.js'></script>
+<script src='../build/out/fullcalendar.js'></script>
+<script>
+
+$(document).ready(function() {
+  var shift = false
+  , calendar = $('#calendar').fullCalendar({
+    header: {
+      left: '',
+      center: '',
+      right: ''
+    },
+    columnFormat: {
+      agendaWeek: 'ddd'
+    },
+    selectable: true,
+    selectHelper: true,
+    select: function(start, end) {
+      var eventData = {
+          start: start,
+          end: end
+        }
+      if (isOverlapping(eventData)) {
+        alert('Cannot overlap events!')
+        calendar.fullCalendar( 'unselect' )
+      } else {
+        var title = prompt('Event Title:');
+        if (title) {
+          eventData.title = title
+          $('#calendar').fullCalendar('renderEvent', eventData, true); // stick? = true
+        }
+        $('#calendar').fullCalendar('unselect');
+      }
+    },
+    slotEventOverlap : false,
+    defaultView: 'agendaWeek',
+    editable: true,
+    eventDrop: function(event, revertFunc) {
+      if (isOverlapping(event)){
+        alert('Cannot overlap events!')
+        revertFunc();
+      } else {
+        if (shift) {
+          var eventCopy = {}
+
+          //change the _id parameter to my global increment variable
+          eventCopy._id = 'fc_' + guid();
+
+          //set the start and date to the start date of the dropped event
+          //for whatever reason, if you don't set the ._start and .start, this
+          //doesn't work
+          eventCopy._start = event._start;
+          eventCopy.start = event._start;
+
+          eventCopy._end = event._end;
+          eventCopy.end = event._end;
+
+          eventCopy.allDay = event.allDay;
+          eventCopy.title = event.title;
+
+          //render the copy to the calendar
+          $('#calendar').fullCalendar('renderEvent', eventCopy)
+
+          //snap the original event back to the starting point
+          revertFunc();
+        }
+      }
+    },
+    eventResize: function(event, revertFunc) {
+      if (isOverlapping(event)){
+        alert('Cannot overlap events!')
+        revertFunc();
+      }
+    }
+  });
+  var $copyButton = $('<button>', {class: 'js-copyButton'}).text('copy')
+  $('.fc-agenda-days > tr > .fc-widget-header').append($copyButton)
+  $(document).keydown(function (e) {
+    if (e.keyCode === 16) {
+      shift = true;
+    } else {
+      shift = false;
+    }
+  }).keyup(function () {
+    shift = false;
+  });
+  function isOverlapping (event){
+    // "calendar" on line below should ref the element on which fc has been called
+    var array = calendar.fullCalendar('clientEvents');
+    for(var i in array){
+      if(event._id !== undefined && array[i]._id == event._id) {
+        continue
+      } else {
+        var arrayEnd = ((array[i].end === null) ? array[i].start.clone().add('days', 1) : array[i].end)
+          , eventEnd = ((event.end === null) ? event.start.clone().add('days', 1) : event.end)
+
+        if ((array[i].allDay === true && event.start >= array[i].start && event.start < arrayEnd) // If the event is on the same day as an all day event
+          || (event.allDay === true && array[i].start >= event.start && array[i].start < eventEnd) // If the all day event is on the same day as an event
+          || (event.allDay === undefined && array[i].start >= event.start && array[i].start < event.end) // if the event is an all day event on the same day as an all day event
+          || (event.end > array[i].start && event.start < array[i].end) // If event on the same day
+          ){
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  var guid = (function() {
+    function s4() {
+      return Math.floor((1 + Math.random()) * 0x10000)
+                 .toString(16)
+                 .substring(1);
+    }
+    return function() {
+      return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+             s4() + '-' + s4() + s4() + s4();
+    };
+  })();
+});
+
+</script>
+<style>
+
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: "Lucida Grande",Helvetica,Arial,Verdana,sans-serif;
+    font-size: 14px;
+  }
+
+  #calendar {
+    width: 900px;
+    margin: 40px auto;
+  }
+
+</style>
+</head>
+<body>
+
+  <div id='calendar'></div>
+
+</body>
+</html>
