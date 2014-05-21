@@ -9,8 +9,8 @@
 <script src='../lib/jquery-ui/ui/jquery-ui.js'></script>
 <script src='../build/out/fullcalendar.js'></script>
 <script>
-
 $(document).ready(function() {
+
   var shift = false
   , calendar = $('#calendar').fullCalendar({
     header: {
@@ -21,6 +21,7 @@ $(document).ready(function() {
     columnFormat: {
       agendaWeek: 'ddd'
     },
+    firstDay: 1,
     selectable: true,
     selectHelper: true,
     select: function(start, end) {
@@ -124,6 +125,36 @@ $(document).ready(function() {
              s4() + '-' + s4() + s4() + s4();
     };
   })();
+
+
+  $('.js-validate-button').on('click', function() {
+    var events = calendar.fullCalendar('clientEvents')
+      , startDate = calendar.fullCalendar('getView').start
+      , freeDays = []
+
+    for(var i=0; i < 7; i++) {
+      var currentDay = startDate.clone().add('days', i)
+        , hasDays = false
+
+      for(var j in events) {
+        var arrayEnd = ((events[j].end === null) ? events[j].start.clone().add('days', 1) : events[j].end)
+        if((events[j].allDay === true && currentDay >= events[j].start && currentDay < arrayEnd) || (events[j].end > currentDay && events[j].start < currentDay.clone().add('hours', 24))) {
+          hasDays = true
+        }
+      }
+      if(!hasDays) {
+        freeDays.push(currentDay.format('dddd'))
+      }
+    }
+
+    if (freeDays.length) {
+      console.log('All days must be used up')
+      $.map(freeDays, function(val, i) {
+        console.log(val + ' is free')
+      })
+    }
+  })
+
 });
 
 </script>
@@ -146,6 +177,7 @@ $(document).ready(function() {
 <body>
 
   <div id='calendar'></div>
+  <button type='button' class='js-validate-button'>Validate</button>
 
 </body>
 </html>
